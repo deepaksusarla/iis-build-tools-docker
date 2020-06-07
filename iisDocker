@@ -1,0 +1,68 @@
+FROM mcr.microsoft.com/windows/servercore:1903
+SHELL ["powershell"]
+
+#Installing IIS Server
+RUN Install-WindowsFeature Web-Server; \
+Install-WindowsFeature Web-WebServer; \
+Install-WindowsFeature Web-Common-Http; \
+Install-WindowsFeature Web-Default-Doc; \
+Install-WindowsFeature Web-Dir-Browsing; \
+Install-WindowsFeature Web-Http-Errors; \
+Install-WindowsFeature Web-Static-Content; \
+Install-WindowsFeature Web-Health; \
+Install-WindowsFeature Web-Http-Logging; \
+Install-WindowsFeature Web-Performance; \
+Install-WindowsFeature Web-Stat-Compression; \
+Install-WindowsFeature Web-Security; \
+Install-WindowsFeature Web-Filtering; \
+Install-WindowsFeature Web-Basic-Auth; \
+Install-WindowsFeature Web-App-Dev; \
+Install-WindowsFeature Web-Net-Ext45; \
+Install-WindowsFeature Web-Asp-Net45; \
+Install-WindowsFeature NET-Framework-45-ASPNET; \
+Install-WindowsFeature NET-WCF-Services45; \
+Install-WindowsFeature NET-WCF-HTTP-Activation45; \
+Install-WindowsFeature Web-WHC; \
+Install-WindowsFeature Web-Http-Redirect; \
+Install-WindowsFeature Web-Url-Auth; \
+Install-WindowsFeature Web-Windows-Auth;
+
+#Enabling IIS remote mangement
+RUN Install-WindowsFeature Web-Mgmt-Service; \
+New-ItemProperty -Path HKLM:\software\microsoft\WebManagement\Server -Name EnableRemoteManagement -Value 1 -Force; \
+Set-Service -Name wmsvc -StartupType automatic;
+
+#Add user for Remote IIS Manager Login
+RUN net user iisadmin Concento#1 /ADD; \
+net localgroup administrators iisadmin /add;
+
+#Creating Directories
+RUN mkdir SetupFiles
+RUN mkdir Installer
+RUN mkdir SourceCode
+
+#Copiying required files.
+COPY SetupFiles/ c:/SetupFiles/
+
+#Creating SelfsignedCertificate for IIS Server
+RUN ["powershell", "c:/SetupFiles/SelfSignedCertificate.ps1"]
+
+#Downloading 2010 VC++tools
+ADD https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe /SetupFiles/vcredist_x86.exe
+
+WORKDIR c:/SetupFiles
+
+#Installing VC++ tools and Web Deploy
+RUN Start-Process vcredist_x86.exe -ArgumentList "/install", "/passive", "/norestart" -PassThru | wait-process
+RUN msiexec /i WebDeploy_amd64_en-US.msi LicenseAccepted="0" ADDLOCAL=ALL /quiet /qn /passive /norestart
+
+WORKDIR c:/
+
+#Installing choco manager, build tools, git, nodejs and java
+RUN ["powershell", "c:/SetupFiles/RunInstallers.ps1"]
+
+#Add build tools test window to run tests
+RUN $env:PATH = $env:PATH + ';C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\IDE\CommonExtensions\Microsoft\TestWindow;'; \
+Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\' -Name Path -Value $env:PATH
+
+ENTRYPOINT powershell.exe C:\SetupFiles\EntryPoint.ps1

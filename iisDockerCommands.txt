@@ -1,0 +1,39 @@
+Web-WHC
+Web-Net-Ext45
+NET-WCF-HTTP-Activatation45
+--headless --webroot="C:\inetpub\wwwroot" --server="10.10.10.3" --username="Concento" --password="Concento#1"
+
+Append("")
+            .Append("" + webroot)
+            .Append("" + dbAddress)
+            .Append("" + dbUsername)
+            .Append("" + dbPassword)
+			
+			docker build -f windowsiis -t issimage . 
+			docker build -f windowssql -t windowssql .			
+			 docker run -d -p 8000:80 -v D:/installer:c:/Installer --name iisServer -d issimage:latest
+			 docker exec -t -i iisServer powershell
+			 docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Admin@12' -p 1433:1433 -d --name sqlContainer1 mssql:latest
+			 docker run -d -p 8000:80 -v D:/installer:c:/Installer --network=TransparentNet3 --ip 10.10.10.2 --dns 8.8.8.8 --name iisServer -d issimage:latest 
+			 
+			 \Program Files\Microsoft SQL Server\MSSQL11.MSSQLSERVER\MSSQL\Backup
+			 
+			 docker network create -d nat --subnet=172.16.1.0/24 --gateway=172.16.1.1 CustomNat1
+			 docker network create -d nat --subnet=10.10.10.0/24 --gateway=10.10.10.1 TransparentNet3
+			 
+			 RUN icacls 'C:\inetpub\wwwroot\App_Data' /grant 'IIS_IUSRS:(F)'
+			 
+			 Add "dns":["8.8.8.8"] in docker engine json  
+			 ; \
+    Install-WindowsFeature Web-WHC; \
+	Install-WindowsFeature Web-Net-Ext45; \
+	Install-WindowsFeature NET-WCF-HTTP-Activatation45
+	
+	
+	C:\>icacls "D:\test" /grant John:(OI)(CI)F /T
+According do MS documentation:
+
+F = Full Control
+CI = Container Inherit - This flag indicates that subordinate containers will inherit this ACE.
+OI = Object Inherit - This flag indicates that subordinate files will inherit the ACE.
+/T = Apply recursively to existing files and sub-folders. (OI and CI only apply to new files and sub-folders). Credit: comment by @AlexSpence.
