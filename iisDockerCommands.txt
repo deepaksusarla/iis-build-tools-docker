@@ -1,14 +1,8 @@
 Web-WHC
 Web-Net-Ext45
 NET-WCF-HTTP-Activatation45
---headless --webroot="C:\inetpub\wwwroot" --server="10.10.10.3" --username="Concento" --password="Concento#1"
 
-Append("")
-            .Append("" + webroot)
-            .Append("" + dbAddress)
-            .Append("" + dbUsername)
-            .Append("" + dbPassword)
-			
+
 			docker build -f windowsiis -t issimage . 
 			docker build -f windowssql -t windowssql .			
 			 docker run -d -p 8000:80 -v D:/installer:c:/Installer --name iisServer -d issimage:latest
